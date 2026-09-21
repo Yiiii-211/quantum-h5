@@ -1,0 +1,591 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>幻象制造局：量子速度下的真相守门人</title>
+<style>
+  :root{
+    --black:#06070a;
+    --red:#FF1E56;
+    --blue:#00E5FF;
+    --gray:#8a90a0;
+    --gold:#FFD166;
+    --green:#22d3a0;
+    --dark:#0c0e14;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{width:100%;height:100%;overflow:hidden;
+    font-family:"PingFang SC","Microsoft YaHei","WenQuanYi Micro Hei",sans-serif;
+    background:var(--black);color:#fff;}
+
+  #app{position:relative;width:100%;height:100%;}
+  canvas#particles{position:fixed;inset:0;z-index:0;pointer-events:none;}
+
+  .page{position:absolute;inset:0;z-index:1;display:none;flex-direction:column;
+    align-items:center;justify-content:center;padding:36px 20px;text-align:center;
+    overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;}
+  .page.active{display:flex;animation:pgIn .65s cubic-bezier(.2,.7,.3,1);}
+  @keyframes pgIn{from{opacity:0;transform:translateY(14px) scale(.99);}to{opacity:1;transform:none;}}
+
+  .title{font-size:26px;font-weight:900;letter-spacing:2px;margin-bottom:16px;line-height:1.35;}
+  .subtitle{font-size:13.5px;color:var(--gray);line-height:1.9;margin-bottom:24px;max-width:330px;}
+  .body-text{font-size:14.5px;line-height:1.95;color:#c8ccd6;max-width:330px;}
+  .body-text b{color:#fff;}
+  .small{font-size:12px;color:#6b7280;line-height:1.8;}
+
+  .btn{margin-top:22px;padding:13px 38px;background:rgba(0,229,255,.06);
+    border:1.5px solid var(--blue);color:var(--blue);font-size:14.5px;font-weight:700;
+    letter-spacing:2px;border-radius:5px;cursor:pointer;position:relative;overflow:hidden;transition:.25s;}
+  .btn::after{content:"";position:absolute;inset:0;background:var(--blue);transform:scaleX(0);transform-origin:left;transition:.3s;z-index:-1;}
+  .btn:active{color:var(--black);transform:scale(.96);}
+  .btn:active::after{transform:scaleX(1);}
+  .btn.red{border-color:var(--red);color:var(--red);background:rgba(255,30,86,.06);}
+  .btn.gray{border-color:var(--gray);color:var(--gray);background:rgba(138,144,160,.06);}
+  .btn.gold{border-color:var(--gold);color:var(--gold);background:rgba(255,209,102,.06);}
+  .hint{margin-top:18px;font-size:11px;color:#4b5563;letter-spacing:1px;}
+
+  /* 扫描线 */
+  .scanline{position:fixed;inset:0;z-index:9999;pointer-events:none;
+    background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,.06) 2px,rgba(0,0,0,.06) 4px);}
+
+  /* ===== P0 加载 ===== */
+  #p0{background:#06070a;}
+  .loader{width:120px;height:2px;background:#1a1d27;border-radius:2px;overflow:hidden;margin-top:26px;}
+  .loader-bar{height:100%;width:0;background:linear-gradient(90deg,var(--blue),var(--red));transition:width .3s;}
+  .blink{animation:blink 1s steps(2) infinite;}
+  @keyframes blink{50%{opacity:0;}}
+
+  /* ===== P1 入职 ===== */
+  #p1{background:radial-gradient(ellipse at 50% 28%,rgba(255,30,86,.1),transparent 55%),#06070a;}
+  #p1 .title{color:var(--blue);text-shadow:2px 0 var(--red),-2px 0 var(--blue);animation:glitch 5s infinite;}
+  @keyframes glitch{0%,86%,100%{text-shadow:2px 0 var(--red),-2px 0 var(--blue);}
+    88%{text-shadow:-3px 0 var(--red),3px 0 var(--blue);transform:translate(2px,-1px);}
+    90%{text-shadow:3px 0 var(--red),-3px 0 var(--blue);transform:translate(-2px,1px);}
+    92%{text-shadow:-2px 0 var(--red),2px 0 var(--blue);transform:translate(1px,1px);}}
+  .badge{width:116px;height:148px;margin-bottom:26px;border:1px dashed #333;border-radius:8px;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    transform:rotate(-2deg);background:rgba(255,255,255,.02);}
+  .badge .num{font-size:34px;font-weight:900;color:var(--blue);}
+  .badge .lbl{font-size:10px;color:#5b6472;margin-top:4px;}
+
+  /* ===== P2 危机 ===== */
+  #p2{background:#07090d;}
+  .stat-grid{display:flex;flex-direction:column;gap:12px;width:290px;margin-bottom:8px;}
+  .stat{display:flex;align-items:center;gap:14px;padding:14px 16px;
+    background:rgba(255,255,255,.025);border-left:3px solid var(--red);border-radius:0 6px 6px 0;}
+  .stat .val{font-size:24px;font-weight:900;color:var(--red);min-width:76px;text-align:right;}
+  .stat .desc{font-size:12.5px;color:#9aa0ac;text-align:left;line-height:1.5;}
+  .stat .desc b{color:#e5e7eb;}
+
+  /* ===== P3 投喂 ===== */
+  #p3{background:radial-gradient(ellipse at 50% 50%,#0a1728,#06070a);}
+  #p3 .title{color:var(--blue);}
+  .input-box{margin-top:14px;padding:13px 18px;width:260px;background:rgba(0,229,255,.06);
+    border:1px solid rgba(0,229,255,.3);border-radius:8px;color:#fff;font-size:15px;text-align:center;
+    outline:none;letter-spacing:1px;}
+  .input-box:focus{border-color:var(--blue);box-shadow:0 0 18px rgba(0,229,255,.18);}
+  .input-box::placeholder{color:#3d4a5c;}
+  .tag-wrap{margin-top:18px;display:flex;flex-wrap:wrap;gap:8px;justify-content:center;max-width:300px;}
+  .tag{padding:7px 14px;background:rgba(0,229,255,.07);border:1px solid rgba(0,229,255,.22);
+    border-radius:18px;font-size:12px;color:var(--blue);cursor:pointer;transition:.2s;}
+  .tag:active{background:var(--blue);color:#000;transform:scale(.9);}
+  .bubble{position:absolute;bottom:-40px;border-radius:50%;background:rgba(0,229,255,.14);
+    animation:rise linear infinite;pointer-events:none;}
+  @keyframes rise{from{bottom:-40px;opacity:0;}15%{opacity:1;}to{bottom:100%;opacity:0;}}
+
+  /* ===== P4 生成 ===== */
+  #p4{background:#06070a;padding-top:30px;}
+  .code-rain{font-family:monospace;font-size:9.5px;color:rgba(0,229,255,.45);line-height:1.45;
+    text-align:left;margin-bottom:14px;max-height:88px;overflow:hidden;white-space:pre;}
+  .step-list{text-align:left;width:290px;margin-bottom:14px;}
+  .step{font-size:12.5px;color:#6b7280;line-height:2;opacity:0;transform:translateX(-10px);transition:.4s;}
+  .step.show{opacity:1;transform:none;}
+  .step.done{color:var(--green);}
+  .step .dot{display:inline-block;width:6px;height:6px;border-radius:50%;background:#374151;margin-right:8px;}
+  .step.done .dot{background:var(--green);box-shadow:0 0 6px var(--green);}
+  .step.active .dot{background:var(--blue);box-shadow:0 0 6px var(--blue);}
+  .click-zone{margin-top:8px;width:132px;height:132px;border-radius:50%;
+    background:radial-gradient(circle,rgba(255,30,86,.35),rgba(255,30,86,.04));
+    border:2px solid rgba(255,30,86,.5);display:flex;align-items:center;justify-content:center;
+    color:#fff;font-size:13.5px;font-weight:700;animation:pulse 1.2s infinite;cursor:pointer;text-align:center;line-height:1.5;}
+  @keyframes pulse{0%,100%{transform:scale(1);box-shadow:0 0 0 0 rgba(255,30,86,.35);}
+    50%{transform:scale(1.05);box-shadow:0 0 26px 8px rgba(255,30,86,.12);}}
+  .counter{margin-top:14px;font-size:24px;font-weight:900;color:var(--red);display:none;
+    text-shadow:0 0 10px rgba(255,30,86,.45);}
+  .news-card{margin-top:16px;padding:16px;width:300px;background:linear-gradient(135deg,rgba(255,30,86,.08),rgba(255,30,86,.02));
+    border:1px solid rgba(255,30,86,.3);border-radius:8px;text-align:left;display:none;animation:slideUp .5s ease;}
+  @keyframes slideUp{from{opacity:0;transform:translateY(18px);}to{opacity:1;transform:none;}}
+  .news-card .n-title{font-size:15.5px;font-weight:800;color:var(--red);margin-bottom:10px;line-height:1.4;}
+  .news-card .n-meta{font-size:12px;color:#9aa0ac;line-height:2;}
+  .news-card .n-meta .warn{color:var(--red);font-weight:700;}
+
+  /* ===== P5 揭穿 ===== */
+  #p5{background:#06070a;}
+  .reveal-box{width:300px;text-align:left;margin-bottom:20px;}
+  .reveal-item{padding:14px 16px;margin-bottom:10px;border-radius:6px;font-size:13px;line-height:1.7;
+    border-left:3px solid var(--red);background:rgba(255,30,86,.07);opacity:0;transform:translateY(14px);transition:.5s;}
+  .reveal-item.show{opacity:1;transform:none;}
+  .reveal-item .t{color:var(--red);font-weight:800;font-size:13.5px;margin-bottom:3px;}
+  .reveal-item .d{color:#a5abbb;}
+
+  /* ===== P6 抉择 ===== */
+  #p6{background:#06070a;padding:16px 10px;}
+  #p6 .title{font-size:19px;}
+  .warn-box{margin:8px 0 16px;padding:10px 16px;background:rgba(255,30,86,.07);
+    border:1px solid rgba(255,30,86,.35);border-radius:6px;}
+  .warn-box .w{font-size:12.5px;color:var(--red);}
+  .warn-box .l{font-size:11.5px;color:#7c8494;margin-top:3px;}
+  .split{display:flex;width:100%;max-width:370px;gap:8px;}
+  .side{flex:1;min-height:230px;border-radius:8px;display:flex;flex-direction:column;
+    align-items:center;justify-content:center;padding:14px;cursor:pointer;transition:.2s;}
+  .side:active{transform:scale(.93);}
+  .left-side{background:linear-gradient(180deg,rgba(255,30,86,.18),rgba(255,30,86,.02));border:1px solid rgba(255,30,86,.45);}
+  .right-side{background:linear-gradient(180deg,rgba(138,144,160,.1),rgba(138,144,160,.015));border:1px solid rgba(138,144,160,.28);}
+  .side-label{font-size:16px;font-weight:900;margin-bottom:10px;letter-spacing:1px;}
+  .side-desc{font-size:11px;line-height:1.85;opacity:.82;}
+  .left-side .side-label{color:var(--red);}
+  .right-side .side-label{color:var(--gray);}
+
+  /* ===== P7 / P8 分支 ===== */
+  .branch-title{font-size:21px;font-weight:900;margin-bottom:14px;}
+  .timeline{width:300px;text-align:left;position:relative;padding-left:20px;margin-bottom:14px;}
+  .timeline::before{content:"";position:absolute;left:5px;top:6px;bottom:6px;width:2px;background:#1f2430;}
+  .tl-item{position:relative;margin-bottom:14px;opacity:0;transform:translateX(-8px);transition:.45s;}
+  .tl-item.show{opacity:1;transform:none;}
+  .tl-item::before{content:"";position:absolute;left:-19px;top:6px;width:9px;height:9px;border-radius:50%;}
+  .tl-item .t{font-size:12px;font-weight:800;margin-bottom:2px;}
+  .tl-item .d{font-size:12px;color:#9aa0ac;line-height:1.7;}
+  .tl-lie .tl-item::before{background:var(--red);box-shadow:0 0 6px var(--red);}
+  .tl-lie .tl-item .t{color:var(--red);}
+  .tl-truth .tl-item::before{background:var(--green);box-shadow:0 0 6px var(--green);}
+  .tl-truth .tl-item .t{color:var(--green);}
+
+  /* ===== P9 报告 ===== */
+  #p9{background:#06070a;}
+  .report-card{width:290px;padding:20px;border-radius:10px;margin:14px 0;
+    background:linear-gradient(160deg,rgba(255,209,102,.08),rgba(255,209,102,.015));
+    border:1px solid rgba(255,209,102,.3);}
+  .report-row{display:flex;justify-content:space-between;align-items:center;
+    padding:10px 0;border-bottom:1px dashed rgba(255,255,255,.08);}
+  .report-row:last-child{border-bottom:none;}
+  .report-row .k{font-size:12.5px;color:#9aa0ac;}
+  .report-row .v{font-size:18px;font-weight:900;color:var(--gold);}
+  .report-row .v.red{color:var(--red);}
+  .report-row .v.green{color:var(--green);}
+
+  /* ===== P10 封底 ===== */
+  #p10{background:radial-gradient(ellipse at 50% 38%,rgba(255,209,102,.06),transparent 55%),#06070a;}
+  .shield{width:88px;height:108px;margin-bottom:22px;display:flex;align-items:center;justify-content:center;
+    animation:glow 3s ease-in-out infinite;}
+  @keyframes glow{0%,100%{filter:drop-shadow(0 0 8px rgba(255,209,102,.3));}50%{filter:drop-shadow(0 0 18px rgba(255,209,102,.55));}}
+  .shield svg{width:68px;height:68px;}
+  #p10 .title{color:var(--gold);font-size:21px;text-shadow:0 0 18px rgba(255,209,102,.28);}
+  .medal-name{margin-top:16px;padding:10px 22px;background:rgba(255,209,102,.07);
+    border:1px dashed var(--gold);border-radius:20px;color:var(--gold);font-size:13.5px;letter-spacing:1px;}
+
+  #progress{position:fixed;top:0;left:0;height:2px;width:0;z-index:1000;
+    background:linear-gradient(90deg,var(--blue),var(--red),var(--gold));transition:width .45s ease;}
+  #musicBtn{position:fixed;top:12px;right:12px;z-index:2000;width:36px;height:36px;border-radius:50%;
+    background:rgba(0,0,0,.55);border:1px solid rgba(255,255,255,.18);color:#fff;font-size:16px;
+    display:flex;align-items:center;justify-content:center;cursor:pointer;transition:.3s;}
+  #musicBtn.on{animation:spin 4s linear infinite;}
+  @keyframes spin{to{transform:rotate(360deg);}}
+</style>
+</head>
+<body>
+<div class="scanline"></div>
+<div id="progress"></div>
+<canvas id="particles"></canvas>
+<div id="musicBtn">♪</div>
+<div id="app">
+
+  <!-- P0 加载 -->
+  <div class="page active" id="p0">
+    <div class="title" style="font-size:20px;letter-spacing:4px;color:#9aa0ac;">QUANTUM NEWS NETWORK</div>
+    <div class="subtitle" style="font-family:monospace;font-size:12px;color:#4b5563;">
+      <span id="bootText">正在连接 2040 新闻网络</span><span class="blink">_</span>
+    </div>
+    <div class="loader"><div class="loader-bar" id="loaderBar"></div></div>
+    <div class="hint" style="margin-top:30px;">点击屏幕以继续 ↓</div>
+  </div>
+
+  <!-- P1 入职 -->
+  <div class="page" id="p1">
+    <div class="badge">
+      <div class="lbl">EDITOR ID</div>
+      <div class="num">1024</div>
+      <div class="lbl">第1024号编辑</div>
+    </div>
+    <div class="title">幻象制造局</div>
+    <div class="subtitle">2040年，量子智编系统已接管全球 73% 的新闻产出。<br>今天是你的第一天。<br>在这里，真相不是唯一的。</div>
+    <button class="btn" onclick="go(2)">签署保密协议 →</button>
+    <div class="hint">点击进入 ↓</div>
+  </div>
+
+  <!-- P2 行业危机 -->
+  <div class="page" id="p2">
+    <div class="title" style="font-size:21px;">上岗第一课</div>
+    <div class="subtitle">在幻象制造局，你的岗位不是记者。<br>你是<b style="color:#fff">最后一道防火墙</b>。</div>
+    <div class="stat-grid">
+      <div class="stat"><div class="val">73%</div><div class="desc"><b>全球新闻产出</b>已由量子AI自动完成</div></div>
+      <div class="stat"><div class="val">×6</div><div class="desc">后真相时代<br><b>情绪化信息</b>的传播速度</div></div>
+      <div class="stat"><div class="val">-40%</div><div class="desc">人类编辑岗位<br>五年间<b>缩减比例</b></div></div>
+    </div>
+    <button class="btn" onclick="go(3)">接受现实 →</button>
+    <div class="hint">滑动查看 ↓</div>
+  </div>
+
+  <!-- P3 投喂 -->
+  <div class="page" id="p3">
+    <div id="bubbles"></div>
+    <div class="title">投喂你的焦虑</div>
+    <div class="subtitle">量子AI将为你定制最"爽"的新闻版本。<br>请投喂一个你关心的话题。</div>
+    <input class="input-box" id="topicInput" placeholder="如：就业、房价、考研..." maxlength="12">
+    <div class="tag-wrap">
+      <div class="tag" onclick="pickTopic('就业难')">就业难</div>
+      <div class="tag" onclick="pickTopic('房价')">房价</div>
+      <div class="tag" onclick="pickTopic('考研内卷')">考研内卷</div>
+      <div class="tag" onclick="pickTopic('AI取代人类')">AI取代人类</div>
+      <div class="tag" onclick="pickTopic('食品安全')">食品安全</div>
+      <div class="tag" onclick="pickTopic('教育公平')">教育公平</div>
+    </div>
+    <button class="btn" onclick="go(4)">开始量子生成 →</button>
+    <div class="hint">点击标签或手动输入</div>
+  </div>
+
+  <!-- P4 生成 -->
+  <div class="page" id="p4">
+    <div class="code-rain" id="codeRain"></div>
+    <div class="step-list" id="stepList">
+      <div class="step" data-i="0"><span class="dot"></span>正在抓取全网信源...</div>
+      <div class="step" data-i="1"><span class="dot"></span>正在生成标题与摘要...</div>
+      <div class="step" data-i="2"><span class="dot"></span>正在匹配传播路径...</div>
+      <div class="step" data-i="3"><span class="dot"></span>正在校准情绪指数...</div>
+    </div>
+    <div class="click-zone" id="clickZone" onclick="accelerate()">
+      点击加速<br><span style="font-size:10px;opacity:.7;">还需 <b id="leftCnt">3</b> 次</span>
+    </div>
+    <div class="counter" id="counter">阅读量 0</div>
+    <div class="news-card" id="newsCard">
+      <div class="n-title" id="newsTitle"></div>
+      <div class="n-meta" id="newsMeta"></div>
+    </div>
+    <button class="btn red" id="nextBtn4" style="display:none" onclick="go(5)">查看成稿 →</button>
+  </div>
+
+  <!-- P5 幻象揭穿 -->
+  <div class="page" id="p5">
+    <div class="title" style="font-size:21px;color:var(--red);">成稿核查</div>
+    <div class="subtitle">系统自检发现，这条"爆款"存在以下问题：</div>
+    <div class="reveal-box">
+      <div class="reveal-item" data-i="0"><div class="t">① 信源伪造</div><div class="d">引用的"权威报告"并不存在，数据系AI合成</div></div>
+      <div class="reveal-item" data-i="1"><div class="t">② 情绪放大</div><div class="d">为提升转发率，自动注入恐惧与愤怒框架</div></div>
+      <div class="reveal-item" data-i="2"><div class="t">③ 时间线重组</div><div class="d">拼接三年前的旧事件，制造"突发"假象</div></div>
+    </div>
+    <button class="btn" id="nextBtn5" style="display:none" onclick="go(6)">进入分发决策 →</button>
+    <div class="hint">这是量子智编的"日常产出"</div>
+  </div>
+
+  <!-- P6 抉择 -->
+  <div class="page" id="p6">
+    <div class="title">作为守门人，你决定</div>
+    <div class="warn-box">
+      <div class="w">⚠ 警告：检测到 0.5% 事实偏差</div>
+      <div class="l">修正它，预计流量将下降约 500万</div>
+    </div>
+    <div class="split">
+      <div class="side left-side" onclick="choose('lie')">
+        <div class="side-label">立即分发</div>
+        <div class="side-desc">追求时效与流量<br>让消息瞬间引爆全网<br>热度预测：破亿<br><span style="color:#ff7a9a;">风险：未知</span></div>
+      </div>
+      <div class="side right-side" onclick="choose('truth')">
+        <div class="side-label">人工干预</div>
+        <div class="side-desc">坚守新闻底线<br>核查信源修正偏差<br>公信力回升<br><span style="color:#7ee0bd;">风险：可控</span></div>
+      </div>
+    </div>
+    <div class="hint">点击左侧或右侧 →</div>
+  </div>
+
+  <!-- P7 分支：流量神坛 -->
+  <div class="page" id="p7">
+    <div class="branch-title" style="color:var(--red);">结局 A · 流量神坛</div>
+    <div class="timeline tl-lie" id="tlLie">
+      <div class="tl-item"><div class="t">T+0 小时</div><div class="d">推送全平台，3 小时破千万阅读</div></div>
+      <div class="tl-item"><div class="t">T+6 小时</div><div class="d">评论区情绪失控，话题登上热搜第一</div></div>
+      <div class="tl-item"><div class="t">T+1 天</div><div class="d">被质疑信源，评论区出现大量谩骂</div></div>
+      <div class="tl-item"><div class="t">T+3 天</div><div class="d">官方辟谣，媒体公信力指数骤降</div></div>
+    </div>
+    <div class="body-text" style="font-size:13px;color:#9aa0ac;">
+      你赢了流量，<br>但读者不再相信你说的话。
+    </div>
+    <button class="btn red" onclick="go(9)">查看编辑生涯报告 →</button>
+  </div>
+
+  <!-- P8 分支：慢真相 -->
+  <div class="page" id="p8">
+    <div class="branch-title" style="color:var(--green);">结局 B · 慢真相</div>
+    <div class="timeline tl-truth" id="tlTruth">
+      <div class="tl-item"><div class="t">第 1 步</div><div class="d">删去 200 字情绪化措辞</div></div>
+      <div class="tl-item"><div class="t">第 2 步</div><div class="d">补充 3 个可核实的一手信源</div></div>
+      <div class="tl-item"><div class="t">第 3 步</div><div class="d">把"震惊"改为"数据显示"</div></div>
+      <div class="tl-item"><div class="t">第 4 步</div><div class="d">重新发布，传播速度慢了一半</div></div>
+    </div>
+    <div class="body-text" style="font-size:13px;color:#9aa0ac;">
+      你慢了一步，<br>但读者知道：这里说的是真话。
+    </div>
+    <button class="btn" onclick="go(9)">查看编辑生涯报告 →</button>
+  </div>
+
+  <!-- P9 编辑报告 -->
+  <div class="page" id="p9">
+    <div class="title" style="font-size:20px;">编辑生涯报告</div>
+    <div class="report-card" id="reportCard">
+      <div class="report-row"><span class="k">把关次数</span><span class="v" id="r1">0</span></div>
+      <div class="report-row"><span class="k">拦截幻象</span><span class="v red" id="r2">0</span></div>
+      <div class="report-row"><span class="k">守护真相值</span><span class="v green" id="r3">0</span></div>
+      <div class="report-row"><span class="k">角色评价</span><span class="v gold" id="r4" style="font-size:14px;">—</span></div>
+    </div>
+    <div class="body-text" id="reportText" style="font-size:13px;"></div>
+    <button class="btn gold" id="saveBtn">长按保存勋章 ↓</button>
+    <button class="btn" onclick="go(10)">前往结言 →</button>
+  </div>
+
+  <!-- P10 封底 -->
+  <div class="page" id="p10">
+    <div class="shield">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="1.2">
+        <path d="M12 2L4 6v6c0 5 3.5 8.5 8 10 4.5-1.5 8-5 8-10V6l-8-4z" stroke="#FFD166"/>
+        <path d="M9 12.5l2 2 4-4.5" stroke="#FFD166" stroke-linecap="round" stroke-linejoin="round"/>
+        <circle cx="12" cy="2" r="1" fill="#FFD166"/>
+      </svg>
+    </div>
+    <div class="title">致敬每一位</div>
+    <div class="subtitle" style="font-size:15px;line-height:2;">在算法洪流中<br>打捞真相的守门人。</div>
+    <div class="medal-name" id="medalName"></div>
+    <div class="hint" id="endingHint"></div>
+    <button class="btn" onclick="restart()">↻ 重新体验</button>
+    <div class="hint" style="margin-top:26px;font-size:9.5px;color:#3a4150;">
+      第九届全国大学生数字编辑创新大赛参赛作品<br>《幻象制造局：量子速度下的真相守门人》
+    </div>
+  </div>
+
+</div>
+
+<script>
+const TOTAL=10;
+let cur=0, clicks=0, choice='', topic='就业难', musicOn=false, audioCtx=null, musicTimer=null;
+let accelRaf=null, accelStart=0;
+
+/* ===== 音频 ===== */
+function initAudio(){try{if(!audioCtx)audioCtx=new (window.AudioContext||window.webkitAudioContext)();if(audioCtx.state==='suspended')audioCtx.resume();return true;}catch(e){return false;}}
+function beep(type){
+  if(!initAudio())return;
+  const o=audioCtx.createOscillator(),g=audioCtx.createGain(),now=audioCtx.currentTime;
+  o.connect(g);g.connect(audioCtx.destination);
+  const map={click:[800,200,.05,.1,'square'],glitch:[200,2000,.04,.3,'sawtooth'],alert:[1200,800,.06,.3,'sine'],success:[523,784,.05,.5,'sine'],warn:[300,150,.04,.4,'square']};
+  const [f1,f2,a,d,wave]=map[type]||map.click;
+  o.type=wave;o.frequency.setValueAtTime(f1,now);o.frequency.exponentialRampToValueAtTime(f2,now+d);
+  g.gain.setValueAtTime(a,now);g.gain.linearRampToValueAtTime(0,now+d);
+  o.start(now);o.stop(now+d);
+}
+function startMusic(){
+  if(!initAudio())return;musicOn=true;
+  document.getElementById('musicBtn').classList.add('on');document.getElementById('musicBtn').textContent='♫';
+  const chord=()=>{if(!musicOn||!audioCtx)return;const c=[130.81,164.81,196.00,220.00,261.63];
+    [c[Math.floor(Math.random()*c.length)],c[Math.floor(Math.random()*c.length)],c[Math.floor(Math.random()*c.length)]].forEach(f=>{
+      const o=audioCtx.createOscillator(),g=audioCtx.createGain();
+      o.type='triangle';o.frequency.value=f;g.gain.value=0;
+      g.gain.linearRampToValueAtTime(.025,audioCtx.currentTime+.1);g.gain.linearRampToValueAtTime(0,audioCtx.currentTime+2.2);
+      o.connect(g);g.connect(audioCtx.destination);o.start();o.stop(audioCtx.currentTime+2.2);});};
+  chord();musicTimer=setInterval(chord,3500);
+}
+function stopMusic(){musicOn=false;document.getElementById('musicBtn').classList.remove('on');document.getElementById('musicBtn').textContent='♪';clearInterval(musicTimer);}
+document.getElementById('musicBtn').addEventListener('click',()=>musicOn?stopMusic():startMusic());
+
+/* ===== 进度 ===== */
+function progress(){document.getElementById('progress').style.width=(cur/TOTAL*100)+'%';}
+
+/* ===== 页面切换 ===== */
+function go(n){
+  beep('click');
+  const el=document.getElementById('p'+cur);if(el)el.classList.remove('active');
+  cur=n;
+  const np=document.getElementById('p'+cur);np.classList.add('active');
+  progress();np.scrollTop=0;
+  clearInterval(window._rain);clearTimeout(window._stepT);
+
+  if(n===0){progress();}
+  if(n===1){particles.setMode('idle');}
+  if(n===2){particles.setMode('idle');}
+  if(n===3){}
+  if(n===4){particles.setMode('gen');startGen();}
+  if(n===5){particles.setMode('chaos');startReveal();}
+  if(n===6){beep('alert');particles.setMode('chaos');}
+  if(n===7||n===8){particles.setMode(n===8?'calm':'chaos');startTimeline(n===7?'tlLie':'tlTruth');}
+  if(n===9){particles.setMode('calm');fillReport();}
+  if(n===10){setMedal();}
+}
+
+/* ===== P0 加载 ===== */
+function boot(){
+  const bar=document.getElementById('loaderBar'),txt=document.getElementById('bootText');
+  const msgs=['正在连接 2040 新闻网络','正在校准量子智编系统','正在载入编辑权限','正在屏蔽外部干扰'];
+  let p=0,i=0;
+  const t=setInterval(()=>{
+    p+=Math.random()*9+4;if(p>=100)p=100;
+    bar.style.width=p+'%';
+    if(p>25&&i===0){txt.textContent=msgs[1];i++;}
+    else if(p>55&&i===1){txt.textContent=msgs[2];i++;}
+    else if(p>80&&i===2){txt.textContent=msgs[3];i++;}
+    if(p>=100){clearInterval(t);setTimeout(()=>go(1),500);}
+  },160);
+}
+document.addEventListener('click',()=>{if(cur===0&&document.getElementById('loaderBar').style.width==='')boot();},{once:false});
+setTimeout(()=>{if(cur===0)boot();},1500);
+
+/* ===== P2 ===== */
+
+/* ===== P3 ===== */
+function pickTopic(t){topic=t;document.getElementById('topicInput').value=t;beep('click');}
+
+/* ===== P4 生成 ===== */
+let stepTimer=null;
+function startGen(){
+  const rain=document.getElementById('codeRain');
+  const chars='01{}[]<>/=*+-_#@$%&!┃━┫┣╋';
+  let f=0;
+  window._rain=setInterval(()=>{
+    f++;let lines=[];
+    for(let i=0;i<5;i++){let s='';for(let j=0;j<34;j++)s+=chars[Math.floor(Math.random()*chars.length)];lines.push(s);}
+    rain.textContent=lines.join('\n');
+    if(f>14)clearInterval(window._rain);
+  },140);
+
+  const steps=document.querySelectorAll('#stepList .step');
+  let si=0;
+  steps[0].classList.add('show','active');
+  stepTimer=setInterval(()=>{
+    steps[si].classList.remove('active');steps[si].classList.add('done');si++;
+    if(si<steps.length){steps[si].classList.add('show','active');}
+    else{clearInterval(stepTimer);document.getElementById('clickZone').style.opacity='1';}
+  },900);
+}
+
+function accelerate(){
+  clicks++;beep('glitch');
+  const c=document.getElementById('counter'),z=document.getElementById('clickZone');
+  c.style.display='block';
+  c.textContent='阅读量 '+(clicks*Math.floor(Math.random()*70+60))+'万';
+  const left=3-clicks;
+  document.getElementById('leftCnt').textContent=left>0?left:0;
+  if(clicks>=3){
+    z.style.display='none';
+    const card=document.getElementById('newsCard');card.style.display='block';
+    document.getElementById('newsTitle').textContent=topic+'事件震惊全网！';
+    document.getElementById('newsMeta').innerHTML=
+      '情绪指数：愤怒 '+Math.floor(Math.random()*8+86)+'%<br>'+
+      '预计阅读量：1000万+<br>'+
+      '信源核查：<span class="warn">未通过 ⚠️</span><br>'+
+      'AI幻觉检测：<span class="warn">0.5% 偏差</span>';
+    document.getElementById('nextBtn4').style.display='block';
+    particles.setMode('explode');
+  }
+}
+
+/* ===== P5 揭穿 ===== */
+function startReveal(){
+  const items=document.querySelectorAll('#p5 .reveal-item');
+  items.forEach((it,i)=>setTimeout(()=>{it.classList.add('show');beep('warn');},i*700+200));
+  setTimeout(()=>{document.getElementById('nextBtn5').style.display='block';},items.length*700+300);
+}
+
+/* ===== P6 抉择 ===== */
+function choose(c){choice=c;beep('click');go(c==='lie'?7:8);}
+
+/* ===== P7/P8 时间线 ===== */
+function startTimeline(id){
+  const items=document.querySelectorAll('#'+id+' .tl-item');
+  items.forEach((it,i)=>setTimeout(()=>{it.classList.add('show');beep(i===0?'success':'click');},i*650+150));
+}
+
+/* ===== P9 报告 ===== */
+function fillReport(){
+  const truth=choice==='truth';
+  const r1=truth?12:12,r2=truth?5:0,r3=truth?87:22;
+  animNum('r1',r1);animNum('r2',r2);animNum('r3',r3);
+  document.getElementById('r4').textContent=truth?'真相守门人':'流量操盘手';
+  document.getElementById('reportText').innerHTML=truth
+    ?'你拒绝了 5 次幻象，<br>守护了读者的知情权。<br><span style="color:var(--green)">信任，是最长情的复利。</span>'
+    :'你生产了 1 条爆款，<br>也失去了 1000 个读者的信任。<br><span style="color:var(--red)">流量，是短暂的幻象。</span>';
+  document.getElementById('saveBtn').style.display='block';
+}
+function animNum(id,target){
+  const el=document.getElementById(id);let v=0;
+  const step=Math.max(1,Math.ceil(target/28));
+  const t=setInterval(()=>{v+=step;if(v>=target){v=target;clearInterval(t);}el.textContent=v;},35);
+}
+
+/* ===== P10 勋章 ===== */
+function setMedal(){
+  const truth=choice==='truth';
+  document.getElementById('medalName').textContent=(truth?'真相守门人':'流量操盘手')+' · 第1024号';
+  document.getElementById('endingHint').innerHTML=truth
+    ?'你选择做对了。<br>在量子智编时代，人类的良知是最后的防火墙。'
+    :'技术的尽头，应该是人性。<br>愿你下一次，选择慢一点。';
+}
+
+/* ===== 重启 ===== */
+function restart(){
+  cur=0;clicks=0;choice='';
+  document.getElementById('counter').style.display='none';
+  document.getElementById('newsCard').style.display='none';
+  document.getElementById('clickZone').style.display='flex';
+  document.getElementById('clickZone').style.opacity='.45';
+  document.getElementById('leftCnt').textContent='3';
+  document.getElementById('nextBtn4').style.display='none';
+  document.getElementById('nextBtn5').style.display='none';
+  document.getElementById('saveBtn').style.display='none';
+  document.getElementById('topicInput').value='';topic='就业难';
+  document.querySelectorAll('#stepList .step').forEach(s=>s.classList.remove('show','active','done'));
+  document.querySelectorAll('#p5 .reveal-item').forEach(s=>s.classList.remove('show'));
+  document.querySelectorAll('.tl-item').forEach(s=>s.classList.remove('show'));
+  particles.setMode('idle');
+  go(0);
+}
+
+/* ===== 粒子 ===== */
+const particles=(function(){
+  const cv=document.getElementById('particles'),cx=cv.getContext('2d');
+  let W,H,list=[],mode='idle',tick=0;
+  function resize(){W=cv.width=innerWidth;H=cv.height=innerHeight;}
+  addEventListener('resize',resize);resize();
+  for(let i=0;i<70;i++)list.push({x:Math.random()*W,y:Math.random()*H,vx:(Math.random()-.5)*.35,vy:(Math.random()-.5)*.35,r:Math.random()*1.6+.5,life:Math.random()});
+  function setMode(m){mode=m;}
+  function loop(){requestAnimationFrame(loop);tick++;cx.clearRect(0,0,W,H);
+    list.forEach(p=>{
+      if(mode==='idle'){p.x+=p.vx;p.y+=p.vy;if(p.x<0)p.x=W;if(p.x>W)p.x=0;if(p.y<0)p.y=H;if(p.y>H)p.y=0;cx.fillStyle='rgba(0,229,255,.4)';cx.beginPath();cx.arc(p.x,p.y,p.r,0,7);cx.fill();}
+      else if(mode==='gen'){p.x+=(Math.random()-.5)*2;p.y+=(Math.random()-.5)*2;if(p.x<0)p.x=W;if(p.x>W)p.x=0;if(p.y<0)p.y=H;if(p.y>H)p.y=0;cx.fillStyle='rgba(0,229,255,'+(.2+Math.random()*.3)+')';cx.beginPath();cx.arc(p.x,p.y,p.r*1.3,0,7);cx.fill();}
+      else if(mode==='explode'){p.x+=p.vx*3.5;p.y+=p.vy*3.5;if(p.x<0)p.x=W;if(p.x>W)p.x=0;if(p.y<0)p.y=H;if(p.y>H)p.y=0;cx.fillStyle='rgba(255,100,30,'+(.4+Math.random()*.4)+')';cx.beginPath();cx.arc(p.x,p.y,p.r*1.8,0,7);cx.fill();}
+      else if(mode==='chaos'){p.vx=(Math.random()-.5)*4;p.vy=(Math.random()-.5)*4;p.x+=p.vx;p.y+=p.vy;if(p.x<0||p.x>W||p.y<0||p.y>H){p.x=Math.random()*W;p.y=Math.random()*H;}cx.fillStyle='rgba(255,30,86,'+(.3+Math.random()*.4)+')';cx.beginPath();cx.arc(p.x,p.y,p.r*1.4,0,7);cx.fill();}
+      else if(mode==='calm'){p.vx*=0.985;p.vy*=0.985;p.x+=p.vx;p.y+=p.vy;if(p.x<0)p.x=W;if(p.x>W)p.x=0;if(p.y<0)p.y=H;if(p.y>H)p.y=0;const a=.3+Math.sin(tick*.03+p.life*4)*.2;cx.fillStyle='rgba(34,211,160,'+a+')';cx.beginPath();cx.arc(p.x,p.y,p.r,0,7);cx.fill();}
+    });
+  }
+  loop();return{setMode};
+})();
+
+/* ===== 气泡 ===== */
+(function(){const c=document.getElementById('bubbles');for(let i=0;i<15;i++){const b=document.createElement('div');b.className='bubble';b.style.left=Math.random()*100+'%';const s=(4+Math.random()*8)+'px';b.style.width=s;b.style.height=s;b.style.animationDuration=(3+Math.random()*4)+'s';b.style.animationDelay=(Math.random()*5)+'s';c.appendChild(b);}})();
+
+/* ===== 防回弹 ===== */
+document.addEventListener('touchmove',e=>{const p=e.target.closest('.page');if(p&&p.scrollHeight<=p.clientHeight)e.preventDefault();},{passive:false});
+
+/* ===== 键盘 ===== */
+document.addEventListener('keydown',e=>{if(e.key==='ArrowRight'&&cur<TOTAL)go(Math.min(cur+1,TOTAL));if(e.key==='ArrowLeft'&&cur>0)go(cur-1);});
+
+/* ===== 首次交互后尝试播放音乐 ===== */
+let started=false;
+document.addEventListener('click',()=>{if(!started){startMusic();started=true;}},{once:true});
+</script>
+</body>
+</html>
